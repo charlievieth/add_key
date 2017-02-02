@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+
+CURRENT_HOUR=$(date +"%H")
+QUITTING_HOUR=18
+MARGIN_OF_ERROR=1
+
+LIFETIME=$((QUITTING_HOUR - CURRENT_HOUR + MARGIN_OF_ERROR))
+
+if [[ $LIFETIME -le 0 ]]; then
+    LIFETIME=1
+fi
+
+EJECT=1
+
+function usage() {
+    echo "Usage: $(basename $0) [-h --home] [-e --eject] [-n --no-eject] [LIFETIME]"
+    echo ""
+    echo "  $(basename $0) loads an identity and sets a lifetime"
+    echo ""
+    echo "Example:"
+    echo "  $(basename $0) --no-eject 30m"
+    echo ""
+    echo "Options:"
+    echo ""
+    echo "  -h --home        set identity lifetime"
+    echo "  -e --eject       eject volume after adding identity"
+    echo "  -n --no-eject    do not eject volume after adding identity"
+    echo ""
+    echo "The default lifetime is calculated as the hours remaining till 6pm"
+    echo "rounded up to by hour. If the current time is past 6pm the lifetime"
+    echo "is set to one hour."
+    echo ""
+    echo "Note: the identity file must be located at $(dirname $0)/id_rsa."
+    exit 1
+}
+
+if [[ ! -f "$(dirname $0)/id_rsa" ]]; then
+    echo "$(basename $0) no identity file located at: $(dirname $0)/id_rsa"
+    echo ""
+    usage
+fi
+
+while test $# -gt 0; do
+    case "$1" in
+        --help)
+            shift
+            usage
+            ;;
+        -h|--home)
+            shift
+            LIFETIME=24
+            ;;
+        -e|--eject)
+            shift
+            EJECT=1
+            ;;
+        -n|--no-eject)
+            shift
+            EJECT=0
+            ;;
+        *)
+            if grep -q '\d[sSmMhH]$' <<< "$1"; then
+                LIFETIME="$1";
+            elif grep -q '\d$' <<< "$1"; then
+                LIFETIME="$1h"; # Hours
+            else
+                echo "$(basename $0) invalid option: '$1'"
+                echo ""
+                usage
+            fi
+            break
+            ;;
+    esac
+done
+
+MESSAGES=(
+    'RECOMMENDED NEXT ACTION: git pull -r'
+    'DEVELOPERS! DEVELOPERS! DEVELOPERS!'
+    'EJECTED FORCEFULLY, USING VIOLENCE.'
+    'WELCOME HOME.'
+    'GO ABOUT YOUR BUSINESS.'
+    'PLEASE, CONTINUE.'
+    'NOW, WHAT WERE YOU TRYING TO DO?'
+    'CREDENTIALS ACCEPTED.'
+    'KEYS DECRYPTED.'
+    'DEVELOPERS! DEVELOPERS! DEVELOPERS!'
+    'LOGIN PERMITTED.'
+    'GITHUB ACCESS GRANTED.'
+    'AND NOT A MOMENT TOO SOON.'
+    'WEAPONS DISARMED.'
+    'DISARM YOURSELF.'
+    'SECURITY DISABLED.'
+    'DON’T FORGET YOUR HOUSE KEYS.'
+    'TAKE YOUR HOUSE KEYS HOME WITH YOU.'
+    'TURBO DISMOUNT.'
+    'ROOT PERMISSIONS GRANTED.'
+    'WELCOME TO THE SOURCE.'
+    'CODE ACCESS GRANTED.'
+    'WRITE PERMISSIONS GRANTED.'
+    'EJECT THE WARP CORE.'
+    'DROP THE CARGO.'
+    'THE DISK WAS EJECTED PROPERLY. IF POSSIBLE, ALWAYS EJECT A DISK BEFORE UNPLUGGING IT OR TURNING IT OFF.'
+    'SAFE TO REMOVE HARDWARE'
+    'MISSION ACCOMPLISHED.'
+    'GREAT SUCCESS.'
+    'REMOVE THE DISK.'
+    'EJECT THE DRIVE.'
+    'WELL, LOOK AT YOU! ADDING YOUR KEY LIKE YOU’RE SOMEONE IMPORTANT!'
+    'WINDOWS!!!'
+    'WINDOWS!!!'
+    'OMG, WINDOWS!!!'
+    'DEVELOPERS! DEVELOPERS! DEVELOPERS!'
+)
+
+RED="\033[31m"
+CLEAR="\033[0m"
+
+# Pick a random array element
+MESSAGE=${MESSAGES[$RANDOM % ${#MESSAGES[@]}]}
+trap 'echo -e "$RED$MESSAGE$CLEAR"' EXIT
+
+ssh-add -D
+ssh-add -t "$LIFETIME" "$(dirname $0)/id_rsa"
+
+typeahead() {
+  TYPING=0.02
+
+  GOAL_PRINT=$1
+  BASE_PRINT=$2
+
+  if [ -z $BASE_PRINT ]; then
+    BASE_PRINT=1
+  fi
+
+  for i in $(seq $BASE_PRINT ${#GOAL_PRINT});
+  do
+    echo -en "\r$RED${GOAL_PRINT:0:$i}$CLEAR"
+    sleep $TYPING
+  done
+}
+
+typeahead "Working......"
+sleep 0.2
+typeahead "Working...... please wait." 14
+echo
+
+if [ $EJECT -eq 1 ]; then
+    diskutil umount force "$(dirname $0)"
+fi
+

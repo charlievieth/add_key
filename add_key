@@ -1,16 +1,7 @@
 #!/usr/bin/env bash
 
-CURRENT_HOUR=$(date +"%H")
 QUITTING_HOUR=18
 MARGIN_OF_ERROR=1
-
-LIFETIME=$((QUITTING_HOUR - CURRENT_HOUR + MARGIN_OF_ERROR))
-
-if [[ $LIFETIME -le 0 ]]; then
-    LIFETIME=1
-fi
-
-EJECT=1
 
 function usage() {
     echo "Usage: $(basename $0) [-h --home] [-e --eject] [-n --no-eject] [LIFETIME]"
@@ -40,6 +31,15 @@ if [[ ! -f "$(dirname $0)/id_rsa" ]]; then
     usage
 fi
 
+CURRENT_HOUR=$(date +"%H")
+LIFETIME=$((QUITTING_HOUR - CURRENT_HOUR + MARGIN_OF_ERROR))
+if [[ $LIFETIME -le 0 ]]; then
+    LIFETIME=1
+fi
+LIFETIME="${LIFETIME}h"
+
+EJECT=1
+
 while test $# -gt 0; do
     case "$1" in
         --help)
@@ -48,7 +48,7 @@ while test $# -gt 0; do
             ;;
         -h|--home)
             shift
-            LIFETIME=24
+            LIFETIME='24h'
             ;;
         -e|--eject)
             shift
@@ -147,4 +147,3 @@ echo
 if [ $EJECT -eq 1 ]; then
     diskutil umount force "$(dirname $0)"
 fi
-
